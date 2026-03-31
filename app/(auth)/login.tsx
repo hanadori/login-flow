@@ -1,8 +1,10 @@
-import { Colors } from '@/constants/themes';
-import { useThemeStore } from '@/store/themeStore';
+import { auth } from "@/config/firebaseConfig";
+import { Colors } from "@/constants/themes";
+import { useThemeStore } from "@/store/themeStore";
 import { router } from "expo-router";
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { Controller, useForm } from "react-hook-form";
-import { Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
 
 export default function Login() {
   const { theme } = useThemeStore();
@@ -10,12 +12,29 @@ export default function Login() {
 
   const { control, handleSubmit, formState: { errors } } = useForm();
 
-  const onSubmit = () => {
-    router.replace("/(tabs)/home");
+  const onSubmit = async (data: any) => {
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      router.replace("/(tabs)/home");
+    } catch (error: any) {
+      Alert.alert("Login Failed", error.message);
+    }
+  };
+
+  const onGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      router.replace("/(tabs)/home");
+    } catch (error: any) {
+      Alert.alert("Google Login Failed", error.message);
+    }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Login</Text>
+
       <Text style={{ color: colors.text }}>Email</Text>
       <Controller
         control={control}
@@ -57,6 +76,9 @@ export default function Login() {
       <Text style={styles.error}>{errors.password?.message as string}</Text>
 
       <Button title="Login" onPress={handleSubmit(onSubmit)} />
+      <View style={{ marginVertical: 5 }} />
+      <Button title="Sign in with Google" onPress={onGoogleLogin} />
+      <View style={{ marginVertical: 5 }} />
       <Button title="Go to Register" onPress={() => router.push("/register")} />
     </View>
   );
@@ -67,6 +89,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,
